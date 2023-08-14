@@ -119,9 +119,6 @@ std::size_t TransportCatalogue::PointersPairHasher::operator()(const std::pair<S
 
 void TransportCatalogue::ComputeRouteLength(Route& route)
 {
-	/*for (const Stop& stop : route.GetStops()) {
-		route.route_length_ += ComputeDistance(stop.coordinates_, stop.coordinates_);
-	}*/
 	const auto& stops_ref = route.GetStops();
 	//Вычисляем длину маршрута двумя способами
 	route.geo_route_length_ = std::transform_reduce(
@@ -256,12 +253,7 @@ size_t TransportCatalogue::GetDistance(Stop* from_stop, Stop* to_stop) const
 {
 	size_t result = GetDistanceBase(from_stop, to_stop);
 
-	if (result != 0) {
-		return result;
-	}
-	else {
-		return GetDistanceBase(to_stop, from_stop);
-	}
+    return (result > 0 ? result : GetDistanceBase(to_stop, from_stop));
 }
 
 }
