@@ -1,30 +1,38 @@
 #pragma once
 
 #include <cmath>
+#include <utility>
 
 constexpr double RadToDegCoef = 3.1415926535 / 180.;
 constexpr int EarthRadius = 6371000;
 
 namespace geo {
 
-struct Coordinates {
-    double lat;
-    double lng;
-    bool operator==(const Coordinates& other) const {
-        return lat == other.lat && lng == other.lng;
-    }
-    bool operator!=(const Coordinates& other) const {
-        return !(*this == other);
-    }
-};
+    struct Coordinates {
 
-inline double ComputeDistance(Coordinates from, Coordinates to) {
-    using namespace std;
-    if (from == to) {
-        return 0;
-    }
-    return acos(sin(from.lat * RadToDegCoef) * sin(to.lat * RadToDegCoef)
-        + cos(from.lat * RadToDegCoef) * cos(to.lat * RadToDegCoef)
-        * cos(abs(from.lng - to.lng) * RadToDegCoef)) * EarthRadius;
-}
+        Coordinates() = default;
+        Coordinates(double, double);
+        Coordinates(const Coordinates&);
+        Coordinates(Coordinates&&) noexcept;
+
+        ~Coordinates() = default;
+
+        Coordinates& operator=(const Coordinates&);
+        Coordinates& operator=(Coordinates&&) noexcept;
+
+        Coordinates& SetLatitude(double);
+        Coordinates& SetLongitude(double);
+
+        double GetLatitude() const;
+        double GetLongitude() const;
+
+        bool operator==(const Coordinates&) const;
+        bool operator!=(const Coordinates&) const;
+
+        double lat = 0.0;
+        double lng = 0.0;
+
+    };
+
+    double ComputeDistance(Coordinates from, Coordinates to);
 }
