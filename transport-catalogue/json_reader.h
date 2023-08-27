@@ -4,6 +4,7 @@
 #include "transport_catalogue.h"
 #include "request_handler.h"
 #include "map_renderer.h"
+#include "json_builder.h"
 
 #include <iostream>
 
@@ -27,9 +28,9 @@ namespace json_reader {
         void ProcessRenderRequest(const json::Dict& render_settings);
         void ProcessRequests();
 
-        const json::Node StopToNode(size_t id, domain::StopStat* stop) const;
-        const json::Node RouteToNode(size_t id, domain::RouteStat* route) const;
-        const json::Node MapToNode(size_t id, svg::Document map) const;
+        const json::Document StopToNode(size_t id, domain::StopStat* stop) const;
+        const json::Document RouteToNode(size_t id, domain::RouteStat* route) const;
+        const json::Document MapToNode(size_t id, const std::string& map) const;
 
         svg::Color ParseColor(const json::Node& node) const;
 

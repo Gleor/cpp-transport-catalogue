@@ -32,7 +32,7 @@ namespace json_reader {
         }
 
         if (node.count("road_distances") != 0) {
-            const json::Dict& distances_ = node.at("road_distances").AsMap();
+            const json::Dict& distances_ = node.at("road_distances").AsDict();
             for (const auto& item : distances_) {
                 request->distances_[item.first] = static_cast<int64_t>(item.second.AsInt());
             }
@@ -114,7 +114,7 @@ namespace json_reader {
         domain::RequestsMap request_map;
         for (const auto& request : arr) {
             domain::Request base_request;
-            ParseBaseRequest(&base_request, request.AsMap());
+            ParseBaseRequest(&base_request, request.AsDict());
             request_map[base_request.type_].emplace_back(base_request);
         }
         if (!request_map.empty()) {
@@ -125,22 +125,23 @@ namespace json_reader {
     void JsonReader::ProcessStatRequests(const json::Array& arr)
     {
         json::Array result;
-        svg::Document m;
+
         result.reserve(arr.size());
         for (const auto& request : arr) {
             domain::Request stat_request;
-            ParseStatRequest(&stat_request, request.AsMap());
+            ParseStatRequest(&stat_request, request.AsDict());
             if (stat_request.key_ == "Stop") {
-                result.push_back(StopToNode(stat_request.id_, request_handler_.GetStop(stat_request.name_)));
+                result.push_back(StopToNode(stat_request.id_, request_handler_.GetStop(stat_request.name_)).GetRoot());
             }
             if (stat_request.key_ == "Bus") {
-                result.push_back(RouteToNode(stat_request.id_, request_handler_.GetRoute(stat_request.name_)));
+                result.push_back(RouteToNode(stat_request.id_, request_handler_.GetRoute(stat_request.name_)).GetRoot());
             }
             if (stat_request.key_ == "Map") {
-                m = request_handler_.RenderMap();
-                result.push_back(MapToNode(stat_request.id_, request_handler_.RenderMap()));
+                auto doc = MapToNode(stat_request.id_, request_handler_.GetMap());
+                result.push_back(MapToNode(stat_request.id_, request_handler_.GetMap()).GetRoot());
             }
         }
+
         Printer(std::move(result));
 
     }
@@ -157,7 +158,7 @@ namespace json_reader {
 
     void JsonReader::ProcessRequests()
     {
-        const json::Dict& json_requests = input_.GetRoot().AsMap();
+        const json::Dict& json_requests = input_.GetRoot().AsDict();
 
         if (json_requests.count("base_requests"))
         {
@@ -166,7 +167,7 @@ namespace json_reader {
 
         if (json_requests.count("render_settings"))
         {
-            ProcessRenderRequest(json_requests.at("render_settings").AsMap());
+            ProcessRenderRequest(json_requests.at("render_settings").AsDict());
         }
 
         if (json_requests.count("stat_requests"))
@@ -176,49 +177,66 @@ namespace json_reader {
 
     }
 
-    const json::Node JsonReader::StopToNode(size_t id, domain::StopStat* stop_stat) const {
-        json::Dict result;
+    const json::Document JsonReader::StopToNode(size_t id, domain::StopStat* stop_stat) const {
 
-        result["request_id"] = static_cast<int>(id);
         if (stop_stat == nullptr) {
-            result["error_message"] = json::Node{ static_cast<std::string>("not found") };
+            return json::Document(
+                json::Builder()
+                .StartDict()
+                .Key("request_id"s).Value(static_cast<int>(id))
+                .Key("error_message"s).Value("not found"s)
+                .EndDict()
+                .Build());
         }
         else {
             json::Array buses;
             for (auto& bus : stop_stat->buses_) {
-                buses.push_back(std::string(bus));
+                buses.push_back(json::Node{ std::string(bus) });
             }
-            result["buses"] = buses;
+            return json::Document(
+                json::Builder()
+                .StartDict()
+                .Key("buses"s).Value(buses)
+                .Key("request_id"s).Value(static_cast<int>(id))
+                .EndDict()
+                .Build());
         }
 
-        return json::Node{ result };
     }
-    const json::Node JsonReader::RouteToNode(size_t id, domain::RouteStat* route_stat) const {
-        json::Dict result;
+    const json::Document JsonReader::RouteToNode(size_t id, domain::RouteStat* route_stat) const {
 
-        result["request_id"] = static_cast<int>(id);
         if (route_stat == nullptr) {
-            result["error_message"] = json::Node{ static_cast<std::string>("not found") };
+            return json::Document(
+                json::Builder()
+                .StartDict()
+                .Key("request_id"s).Value(static_cast<int>(id))
+                .Key("error_message"s).Value("not found"s)
+                .EndDict()
+                .Build());
         }
         else {
-            result["curvature"] = route_stat->route_curvature_;
-            result["route_length"] = static_cast<int>(route_stat->route_length_);
-            result["stop_count"] = static_cast<int>(route_stat->route_stops_num_);
-            result["unique_stop_count"] = static_cast<int>(route_stat->unique_stops_num_);
+            return json::Document(
+                json::Builder()
+                .StartDict()
+                .Key("request_id"s).Value(static_cast<int>(id))
+                .Key("curvature"s).Value(route_stat->route_curvature_)
+                .Key("route_length"s).Value(static_cast<int>(route_stat->route_length_))
+                .Key("stop_count"s).Value(static_cast<int>(route_stat->route_stops_num_))
+                .Key("unique_stop_count"s).Value(static_cast<int>(route_stat->unique_stops_num_))
+                .EndDict()
+                .Build());
         }
-
-        return json::Node{ result };
     }
 
-    const json::Node JsonReader::MapToNode(size_t id, svg::Document map) const {
-        json::Dict result;
+    const json::Document JsonReader::MapToNode(size_t id, const std::string& map) const {
 
-        result["request_id"] = static_cast<int>(id);
-
-        std::ostringstream strm;
-        map.Render(strm);
-        result["map"] = strm.str();
-        return json::Node{ result };
+        return json::Document(
+            json::Builder()
+            .StartDict()
+            .Key("map"s).Value(map)
+            .Key("request_id"s).Value(static_cast<int>(id))
+            .EndDict()
+            .Build());
     }
 
     svg::Point JsonReader::ParsePoint(const json::Node& node) const {
@@ -258,7 +276,8 @@ namespace json_reader {
         return {};
     }
 
-    void JsonReader::Printer(json::Array&& result) {
+    void JsonReader::Printer(json::Array&& result)
+    {
         json::Print(json::Document{ result }, std::cout);
     }
 

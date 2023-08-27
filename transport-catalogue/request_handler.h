@@ -16,6 +16,7 @@ namespace request_handler {
         RequestHandler(transport_catalogue::TransportCatalogue& catalogue, map_renderer::MapRenderer& renderer);
 
         svg::Document RenderMap() const;
+        const std::string GetMap() const;
 
         void SetMapRenderSettings(map_renderer::RendererSettings&& settings);
 

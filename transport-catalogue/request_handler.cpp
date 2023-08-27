@@ -13,6 +13,14 @@ namespace request_handler {
 		return map_renderer_.RenderMap(transport_catalogue_.GetRoutesMap());
 	}
 
+	const std::string RequestHandler::GetMap() const
+	{
+		std::ostringstream strm;
+		RenderMap().Render(strm);
+
+		return strm.str();
+	}
+
 	void RequestHandler::SetMapRenderSettings(map_renderer::RendererSettings&& settings)
 	{
 		map_renderer_.SetSettings(std::move(settings));

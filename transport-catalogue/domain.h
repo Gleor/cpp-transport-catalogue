@@ -122,18 +122,6 @@ namespace domain {
 
 	using RequestsMap = std::unordered_map<RequestType, std::vector<Request>, EnumClassHash>;
 
-	/*
-	struct StatRequest {
-	StatRequest() = default;
-
-	size_t id_ = 0;
-	RequestType type_ = RequestType::null;
-	std::string key_ = ""s;
-	std::string name_ = ""s;
-	RouteStat* route_stat = nullptr;
-	StopStat* stop_stat = nullptr;
-	};
-	*/
 }
 	
 

@@ -21,7 +21,7 @@ namespace json {
     };
 
     class Node final
-        : Value {
+        : private Value {
     public:
 
         using variant::variant;
@@ -37,10 +37,10 @@ namespace json {
         bool IsString() const;
         bool IsNull() const;
         bool IsArray() const;
-        bool IsMap() const;
+        bool IsDict() const;
 
         const Array& AsArray() const;
-        const Dict& AsMap() const;
+        const Dict& AsDict() const;
         int AsInt() const;
         const std::string& AsString() const;
         bool AsBool() const;
