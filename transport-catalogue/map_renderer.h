@@ -15,7 +15,6 @@
 #include <unordered_set>
 #include <map>
 
-
 constexpr double EPSILON = 1e-6;
 
 namespace map_renderer {
@@ -71,39 +70,34 @@ namespace map_renderer {
 
         const RendererSettings& GetRenderSettings() const;
 
-        svg::Document RenderMap(domain::RoutesMap& routes);
+        svg::Document RenderMap(const domain::BusesMap& routes);
         
-        struct RouteCompareName {
-            bool operator()(const domain::Route* lhs, const domain::Route* rhs) const {
-                return lhs->route_name_ < rhs->route_name_;
+        struct BusCompareName {
+            bool operator()(const domain::Bus* lhs, const domain::Bus* rhs) const {
+                return lhs->bus_name_ < rhs->bus_name_;
             }
         };
 
-        using RoutesPoints = std::map<domain::Route*, std::vector<svg::Point>, RouteCompareName>;
+        using RoutesPoints = std::map<domain::Bus*, std::vector<svg::Point>, BusCompareName>;
 
     private:
 
         RendererSettings settings_;
         
-        void ProjectRoutePoints(const std::vector<domain::Route*>& buses, RoutesPoints& projected_points, const SphereProjector& projector) const;
+        void ProjectRoutePoints(const std::vector<domain::Bus*>& buses, RoutesPoints& projected_points, const SphereProjector& projector) const;
 
         void RenderRoutes(svg::Document& document, const RoutesPoints& projected_points, std::vector<svg::Color>& colors) const;
-        /*
-        void RenderRouteLabels(svg::Document& document, const RoutesPoints& projected_points, const std::vector<svg::Color>& colors) const;
+  
+        void RenderBusLabels(std::vector<svg::Text>& labels,
+            const domain::Bus* bus, const svg::Color& color, const SphereProjector& projector) const;
 
-        void RenderRouteLabel(svg::Document& document, const svg::Point point, const svg::Color& color, const std::string& route_name) const;
-        */
-        void RenderRouteLabels(std::vector<svg::Text>& labels,
-            const domain::Route* bus, const svg::Color& color, const SphereProjector& projector) const;
-
-        void RenderRouteLabel(std::vector<svg::Text>& labels, const svg::Point point, const svg::Color& color, const std::string& route_name) const;
-
+        void RenderBusLabel(std::vector<svg::Text>& labels, const svg::Point point, const svg::Color& color, const std::string& route_name) const;
 
         void RenderStop(svg::Document& document, const std::vector<domain::Stop*>& stops, const SphereProjector& projector) const;
 
         void RenderStopLabels(svg::Document& document, const std::vector<domain::Stop*>& stops, const SphereProjector& projector) const;
         void RenderLine(svg::Polyline& line, svg::Color& color);
-        void RenderBuses(const std::vector<domain::Route*>& buses, const SphereProjector& projector,
+        void RenderBuses(const std::vector<domain::Bus*>& buses, const SphereProjector& projector,
             std::vector<svg::Color>& colors, svg::Document& document);
         
     };

@@ -32,7 +32,7 @@ namespace json {
         Builder& EndDict();
 
     private:
-        Node root_{nullptr};
+        Node root_{ nullptr };
 
         std::vector<Node*> nodes_stack_;
 

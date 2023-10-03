@@ -29,12 +29,12 @@ namespace map_renderer {
 		return settings_;
 	}
 	
-	svg::Document MapRenderer::RenderMap(domain::RoutesMap& routes) {
+	svg::Document MapRenderer::RenderMap(const domain::BusesMap& routes) {
 		
 		svg::Document document;
 
 		std::vector<domain::Stop*> all_stops;
-		std::vector<domain::Route*> all_routes;
+		std::vector<domain::Bus*> all_routes;
 
 		std::vector<geo::Coordinates> stops_coords;
 		svg::Document result;
@@ -59,8 +59,8 @@ namespace map_renderer {
 				return lhs->name_ < rhs->name_;
 			});
 		sort(all_routes.begin(), all_routes.end(),
-			[](domain::Route* lhs, domain::Route* rhs) {
-				return lhs->route_name_ < rhs->route_name_;
+			[](domain::Bus* lhs, domain::Bus* rhs) {
+				return lhs->bus_name_ < rhs->bus_name_;
 			});
 		
 		const auto last = std::unique(all_stops.begin(), all_stops.end());
@@ -84,7 +84,7 @@ namespace map_renderer {
 			.SetStrokeLineCap(svg::StrokeLineCap::ROUND)
 			.SetStrokeLineJoin(svg::StrokeLineJoin::ROUND);
 	}
-	void MapRenderer::RenderBuses(const std::vector<domain::Route*>& buses, const SphereProjector& projector,
+	void MapRenderer::RenderBuses(const std::vector<domain::Bus*>& buses, const SphereProjector& projector,
 		std::vector<svg::Color>& colors, svg::Document& document) {
 		
 		size_t i = 0;
@@ -92,13 +92,13 @@ namespace map_renderer {
 		svg::Color curr_color;
 		std::vector<svg::Text> labels;
 
-		for (domain::Route* bus : buses) {
+		for (domain::Bus* bus : buses) {
 			svg::Polyline line;
 			for (const domain::Stop* stop : bus->stops_) {
 				line.AddPoint(projector(stop->coordinates_));
 			}
 			curr_color = colors[i % colors.size()];
-			RenderRouteLabels(labels, bus, curr_color, projector);
+			RenderBusLabels(labels, bus, curr_color, projector);
 			RenderLine(line, curr_color);
 			document.Add(std::move(line));
 			++i;
@@ -107,7 +107,7 @@ namespace map_renderer {
 			document.Add(label);
 		}
 	}
-	void MapRenderer::RenderRouteLabel(std::vector<svg::Text>& labels, const svg::Point point, const svg::Color& color, const std::string& route_name) const {
+	void MapRenderer::RenderBusLabel(std::vector<svg::Text>& labels, const svg::Point point, const svg::Color& color, const std::string& route_name) const {
 		labels.push_back(svg::Text()
 			.SetData(route_name)
 			.SetPosition(point)
@@ -130,15 +130,15 @@ namespace map_renderer {
 			.SetFillColor(color));
 	}
 
-	void MapRenderer::RenderRouteLabels(std::vector<svg::Text>& labels,
-		const domain::Route* bus, const svg::Color& color, const SphereProjector& projector) const {
+	void MapRenderer::RenderBusLabels(std::vector<svg::Text>& labels,
+		const domain::Bus* bus, const svg::Color& color, const SphereProjector& projector) const {
 		
 		size_t m = (bus->stops_.size() / 2);
 		auto first_stop = bus->stops_.front();
 
-		RenderRouteLabel(labels, projector(first_stop->coordinates_), color, bus->route_name_);
+		RenderBusLabel(labels, projector(first_stop->coordinates_), color, bus->bus_name_);
 		if (!bus->is_circular_ && first_stop != bus->stops_[m]) {
-			RenderRouteLabel(labels, projector(bus->stops_[m]->coordinates_), color, bus->route_name_);
+			RenderBusLabel(labels, projector(bus->stops_[m]->coordinates_), color, bus->bus_name_);
 
 		}
 	}

@@ -61,84 +61,84 @@ namespace domain {
 		return coordinates_;
 	}
 
-	Route::Route(Route* other) :
-		route_name_(other->route_name_), stops_(other->stops_), is_circular_(other->is_circular_)
+	Bus::Bus(Bus* other) :
+		bus_name_(other->bus_name_), stops_(other->stops_), is_circular_(other->is_circular_)
 	{
 	}
 
-	Route& Route::SetRouteName(std::string_view route_name)
+	Bus& Bus::SetBusName(std::string_view route_name)
 	{
-		route_name_ = std::string(route_name);
+		bus_name_ = std::string(route_name);
 		return *this;
 	}
 
-	Route& Route::SetStops(std::vector<Stop*>&& stops)
+	Bus& Bus::SetStops(std::vector<Stop*>&& stops)
 	{
 		stops_ = std::move(stops);
 		return *this;
 	}
 
-	Route& Route::SetRouteType(bool type)
+	Bus& Bus::SetBusType(bool type)
 	{
 		is_circular_ = type;
 		return *this;
 	}
 
-	Route& Route::SetUniqueStops(size_t stops)
+	Bus& Bus::SetUniqueStops(size_t stops)
 	{
 		unique_stops_ = stops;
 		return *this;
 	}
 
-	Route& Route::SetGeoRouteLength(double length)
+	Bus& Bus::SetGeoRouteLength(double length)
 	{
 		geo_route_length_ = length;
 		return *this;
 	}
 
-	Route& Route::SetRealRouteLength(size_t length)
+	Bus& Bus::SetRealRouteLength(size_t length)
 	{
 		real_route_length_ = length;
 		return *this;
 	}
 
-	Route& Route::SetCurvature(double curvature)
+	Bus& Bus::SetCurvature(double curvature)
 	{
 		route_curvature_ = curvature;
 		return *this;
 	}
 
-	const std::string& Route::GetRouteName() const
+	const std::string& Bus::GetBusName() const
 	{
-		return route_name_;
+		return bus_name_;
 	}
 
-	const std::vector<Stop*>& Route::GetStops() const
+	const std::vector<Stop*>& Bus::GetStops() const
 	{
 		return stops_;
 	}
 
-	bool Route::GetRouteType() const
+	bool Bus::GetBusType() const
 	{
 		return is_circular_;
 	}
 
-	size_t Route::GetUniqueStops() const
+	size_t Bus::GetUniqueStops() const
 	{
 		return unique_stops_;
 	}
 
-	double Route::GetGeoRouteLength() const
+	double Bus::GetGeoRouteLength() const
 	{
 		return geo_route_length_;
 	}
 
-	size_t Route::GetRealRouteLength() const
+	size_t Bus::GetRealRouteLength() const
 	{
 		return real_route_length_;
 	}
 
-	double Route::GetCurvature() const
+	double Bus::GetCurvature() const
 	{
 		return route_curvature_;
 	}
@@ -148,8 +148,8 @@ namespace domain {
 	{
 	}
 
-	RouteStat::RouteStat(std::string_view name, size_t stops, size_t unique_stops, size_t dist, double curvature) :
-		route_name_(name), route_stops_num_(stops), unique_stops_num_(unique_stops),
+	BusStat::BusStat(std::string_view name, size_t stops, size_t unique_stops, size_t dist, double curvature) :
+		bus_name_(name), bus_stops_num_(stops), unique_stops_num_(unique_stops),
 		route_length_(dist), route_curvature_(curvature)
 	{
 	}
@@ -160,4 +160,44 @@ namespace domain {
 		return ((size_t)(pointers.first) >> shift) + ((size_t)(pointers.second) >> shift * 7);
 
 	}
+
+	RouteItem& RouteItem::SetName(std::string_view name) {
+		name_ = name;
+		return *this;
+	}
+
+	RouteItem& RouteItem::SetSpanCount(int count) {
+		span_count_ = count;
+		return *this;
+	}
+
+	RouteItem& RouteItem::SetTime(double time) {
+		time_ = time;
+		return *this;
+	}
+
+	RouteItem& RouteItem::SetStopFrom(std::string_view from)
+	{
+		from_stop = from;
+		return *this;
+	}
+
+	RouteItem& RouteItem::SetStopTo(std::string_view to)
+	{
+		to_stop = to;
+		return *this;
+	}
+
+	std::string_view RouteItem::GetName() const {
+		return name_;
+	}
+
+	int RouteItem::GetSpanCount() const {
+		return span_count_;
+	}
+
+	double RouteItem::GetTime() const {
+		return time_;
+	}
+	
 }

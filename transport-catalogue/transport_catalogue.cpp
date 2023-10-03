@@ -2,7 +2,7 @@
 
 namespace transport_catalogue {
 
-	void TransportCatalogue::ComputeRouteLength(Route& route)
+	void TransportCatalogue::ComputeRouteLength(Bus& route)
 	{
 		const auto& stops_ref = route.GetStops();
 		//Вычисляем длину маршрута двумя способами
@@ -36,30 +36,30 @@ namespace transport_catalogue {
 		}
 	}
 
-	void TransportCatalogue::AddRoute(Route&& route)
+	void TransportCatalogue::AddBus(Bus&& bus)
 	{
-		if (!routenames_to_routes_.count(route.route_name_)) {
+		if (!routenames_to_routes_.count(bus.bus_name_)) {
 			//Заполненяем контейнеры маршрутами
-			Route& route_ref = routes_data_.emplace_back(std::move(route));
-			routenames_to_routes_.insert({ std::string_view(route_ref.route_name_), &route_ref });
+			Bus& bus_ref = routes_data_.emplace_back(std::move(bus));
+			routenames_to_routes_.insert({ std::string_view(bus_ref.bus_name_), &bus_ref });
 
 			//Находим уникальные остоновки
-			std::vector<Stop*> tmp = route_ref.stops_;
+			std::vector<Stop*> tmp = bus_ref.stops_;
 			std::sort(tmp.begin(), tmp.end());
 			auto last = std::unique(tmp.begin(), tmp.end());
 
-			route_ref.unique_stops_ = (last != tmp.end() ? std::distance(tmp.begin(), last) : tmp.size());
+			bus_ref.unique_stops_ = (last != tmp.end() ? std::distance(tmp.begin(), last) : tmp.size());
 
 			//Проверяем тип маршрута
-			if (!route_ref.is_circular_) {
-				for (int i = static_cast<int>(route_ref.stops_.size()) - 2; i >= 0; --i) {
-					route_ref.stops_.push_back(route_ref.stops_[i]);
+			if (!bus_ref.is_circular_) {
+				for (int i = static_cast<int>(bus_ref.stops_.size()) - 2; i >= 0; --i) {
+					bus_ref.stops_.push_back(bus_ref.stops_[i]);
 				}
 			}
 
 			// Рассчитываем длинну маршрута
-			if (route_ref.stops_.size() > 1) {
-				TransportCatalogue::ComputeRouteLength(route_ref);
+			if (bus_ref.stops_.size() > 1) {
+				TransportCatalogue::ComputeRouteLength(bus_ref);
 			}
 		}
 
@@ -82,7 +82,7 @@ namespace transport_catalogue {
 		}
 	}
 
-	Route* TransportCatalogue::FindRouteByName(const std::string_view route) const
+	Bus* TransportCatalogue::FindRouteByName(const std::string_view route) const
 	{
 		if (routenames_to_routes_.count(route) == 0) {
 			return nullptr;
@@ -92,14 +92,14 @@ namespace transport_catalogue {
 		}
 	}
 
-	RouteStat* TransportCatalogue::GetRouteInfo(const std::string_view route) const
+	BusStat* TransportCatalogue::GetBusInfo(const std::string_view route) const
 	{
-		Route* route_ref = FindRouteByName(route);
-		if (route_ref == nullptr) {
+		Bus* bus_ref = FindRouteByName(route);
+		if (bus_ref == nullptr) {
 			return nullptr;
 		}
-		return new RouteStat(route_ref->route_name_, route_ref->stops_.size(), route_ref->unique_stops_,
-			route_ref->real_route_length_, route_ref->route_curvature_);
+		return new BusStat(bus_ref->bus_name_, bus_ref->stops_.size(), bus_ref->unique_stops_,
+			bus_ref->real_route_length_, bus_ref->route_curvature_);
 	}
 
 	StopStat* TransportCatalogue::GetBusesForStopInfo(const std::string_view bus_stop) const
@@ -113,15 +113,20 @@ namespace transport_catalogue {
 					return (curr_stop->name_ == bus_stop);
 				});
 			if (tmp != route.second->stops_.end()) {
-				buses.insert(route.second->route_name_);
+				buses.insert(route.second->bus_name_);
 			}
 		}
 		return  new StopStat(bus_stop, buses);
 	}
 
-	RoutesMap& TransportCatalogue::GetRoutesMap()
+	const BusesMap& TransportCatalogue::GetBusesMap() const
 	{
 		return routenames_to_routes_;
+	}
+
+	const StopsMap& TransportCatalogue::GetStopsMap()  const
+	{
+		return stopnames_to_stops_;
 	}
 
 	const TransportCatalogue::MapStopsDistances& TransportCatalogue::GetStopDistancesRef() const

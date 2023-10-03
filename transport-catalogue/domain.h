@@ -1,6 +1,7 @@
 #pragma once
 
 #include "geo.h"
+#include "graph.h"
 
 #include <string>
 #include <string_view>
@@ -33,27 +34,27 @@ namespace domain {
 		geo::Coordinates coordinates_{ 0L, 0L };
 	};
 
-	struct Route {
-		Route() = default;
-		Route(Route* other);
+	struct Bus {
+		Bus() = default;
+		Bus(Bus* other);
 
-		Route& SetRouteName(std::string_view route_name);
-		Route& SetStops(std::vector<Stop*>&& stops);
-		Route& SetRouteType(bool type);
-		Route& SetUniqueStops(size_t stops);
-		Route& SetGeoRouteLength(double length);
-		Route& SetRealRouteLength(size_t length);
-		Route& SetCurvature(double curvature);
+		Bus& SetBusName(std::string_view Bus_name);
+		Bus& SetStops(std::vector<Stop*>&& stops);
+		Bus& SetBusType(bool type);
+		Bus& SetUniqueStops(size_t stops);
+		Bus& SetGeoRouteLength(double length);
+		Bus& SetRealRouteLength(size_t length);
+		Bus& SetCurvature(double curvature);
 
-		const std::string& GetRouteName() const;
+		const std::string& GetBusName() const;
 		const std::vector<Stop*>& GetStops() const;
-		bool GetRouteType() const;
+		bool GetBusType() const;
 		size_t GetUniqueStops() const;
 		double GetGeoRouteLength() const;
 		size_t GetRealRouteLength() const;
 		double GetCurvature() const;
 
-		std::string route_name_;
+		std::string bus_name_;
 		std::vector<Stop*> stops_;
 		size_t unique_stops_ = 0U;
 		double geo_route_length_ = 0L;
@@ -63,7 +64,7 @@ namespace domain {
 	};
 
 	using StopsMap = std::unordered_map<std::string_view, Stop*>;
-	using RoutesMap = std::unordered_map<std::string_view, Route*>;
+	using BusesMap = std::unordered_map<std::string_view, Bus*>;
 
 	struct StopStat {
 		explicit StopStat(std::string_view name, std::set<std::string_view>& buses);
@@ -71,12 +72,12 @@ namespace domain {
 		std::set<std::string_view> buses_;
 	};
 
-	struct RouteStat {
-		RouteStat() = default;
-		explicit RouteStat(std::string_view name, size_t stops,
+	struct BusStat {
+		BusStat() = default;
+		explicit BusStat(std::string_view name, size_t stops,
 			size_t unique_stops, size_t dist, double curvature);
-		std::string route_name_;
-		size_t route_stops_num_ = 0U;
+		std::string bus_name_;
+		size_t bus_stops_num_ = 0U;
 		size_t unique_stops_num_ = 0U;
 		size_t route_length_ = 0U;
 		double route_curvature_ = 1L;
@@ -92,9 +93,9 @@ namespace domain {
 	enum RequestType {
 		null = 0,
 		add_stop,
-		add_route,
+		add_bus,
 		find_stop,
-		find_route
+		find_bus
 	};
 
 	struct EnumClassHash
@@ -113,6 +114,8 @@ namespace domain {
 		RequestType type_ = RequestType::null;
 		std::string key_ = ""s;
 		std::string name_ = ""s;
+		std::string from_ = ""s;
+		std::string to_ = ""s;
 		geo::Coordinates coordinates_ = { 0L, 0L };
 		std::vector<std::string> stops_ = {};
 		std::map<std::string, int64_t> distances_ = {};
@@ -122,6 +125,30 @@ namespace domain {
 
 	using RequestsMap = std::unordered_map<RequestType, std::vector<Request>, EnumClassHash>;
 
-}
-	
+	struct RouteItem {
 
+		RouteItem& SetName(std::string_view bus_name);
+		RouteItem& SetSpanCount(int count);
+		RouteItem& SetTime(double time);
+		RouteItem& SetStopFrom(std::string_view from_stop);
+		RouteItem& SetStopTo(std::string_view to_stop);
+
+		std::string_view GetName() const;
+		int GetSpanCount() const;
+		double GetTime() const;
+
+		std::string name_ = {};
+		std::string from_stop = {};
+		std::string to_stop = {};
+		int span_count_ = 0;
+		double time_ = 0.0;
+	};
+
+	struct RouteStat
+	{
+		double total_time_ = 0.0;
+		std::vector<RouteItem> route_items_;
+		bool is_found_ = false;
+		double wait_time_ = 0.0;
+	};
+}
