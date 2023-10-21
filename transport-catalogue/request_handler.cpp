@@ -3,19 +3,29 @@
 
 namespace request_handler {
 
-	RequestHandler::RequestHandler(transport_catalogue::TransportCatalogue& catalogue, map_renderer::MapRenderer& renderer)
-		: transport_catalogue_(catalogue), map_renderer_(renderer)
+	void RequestHandler::InitializeMapRenderer()
 	{
+		if (!map_renderer_) {
+			map_renderer_ = std::make_shared<map_renderer::MapRenderer>(renderer_settings_);
+		}
 	}
 
-	svg::Document RequestHandler::RenderMap() const
+	void RequestHandler::InitializeRouter()
 	{
-		return map_renderer_.RenderMap(transport_catalogue_.GetBusesMap());
+		if (!transport_router_) {
+			transport_router_ = std::make_unique<transport_catalogue::router::TransportRouter>(transport_catalogue_, router_settings_);
+		}
 	}
 
-	const std::string RequestHandler::GetMap() const
+	svg::Document RequestHandler::RenderMap()
 	{
-		//Трансформируем svg::Document в строку для json
+		InitializeMapRenderer();
+
+		return map_renderer_.get()->RenderMap(transport_catalogue_.GetBusesMap());
+	}
+
+	const std::string RequestHandler::GetMap()
+	{
 		std::ostringstream strm;
 		RenderMap().Render(strm);
 
@@ -24,17 +34,25 @@ namespace request_handler {
 
 	void RequestHandler::SetMapRenderSettings(map_renderer::RendererSettings&& settings)
 	{
-		map_renderer_.SetSettings(std::move(settings));
+		renderer_settings_ = std::move(settings);
+
+		InitializeMapRenderer();
+
+		map_renderer_.get()->SetSettings(renderer_settings_);
 	}
 
-	void RequestHandler::SetRouterSettings(transport_catalogue::router::TransportRouter::RouterSettings&& settings)
+	void RequestHandler::SetRouterSettings(transport_catalogue::router::RouterSettings&& settings)
 	{
-		transport_router_ = std::make_unique<transport_catalogue::router::TransportRouter>(transport_catalogue_, settings);
+		router_settings_ = std::move(settings);
+
+		InitializeRouter();
+
+		transport_router_.get()->SetRouterSettings(router_settings_);
 	}
 
 	void RequestHandler::InitializeTransportRouterGraph()
 	{
-		transport_router_->InitializeRouter();
+		transport_router_->ImportRoutingDataFromCatalogue();
 	}
 
 	domain::Stop RequestHandler::MakeStop(domain::Request& request) {
@@ -92,7 +110,7 @@ namespace request_handler {
 
 	domain::RouteStat RequestHandler::GetRoute(const std::string_view from, const std::string_view to)
 	{
-		return transport_router_.get()->FindRoute(from, to);
+		return transport_router_.get()->MakeRoute(from, to);
 	}
 
 	void RequestHandler::HandleBaseRequests(domain::RequestsMap&& requests)
@@ -105,5 +123,48 @@ namespace request_handler {
 			AddBuses(requests.at(domain::RequestType::add_bus));
 		}
 	}
+	
+	bool RequestHandler::SerializeData(std::ostream& output)
+	{
+		if (!serializer_) {                                              
+			serializer_ = std::make_shared<transport_catalogue::serialize::Serializator>(
+				transport_catalogue_,
+				router_settings_,
+				renderer_settings_);
+		}
+
+		serializer_->GetDataFromCatalogue();                                 
+
+		
+		if (transport_router_) {                                         
+			serializer_->SetRouter(transport_router_);             
+			serializer_->GetDataFromRouter();                                
+		}
+		
+		return serializer_->Serialize(output);
+	}
+	bool RequestHandler::DeserializeData(std::istream& input)
+	{
+		if (!serializer_) {
+			serializer_ = std::make_shared<transport_catalogue::serialize::Serializator>(
+				transport_catalogue_,
+				router_settings_,
+				renderer_settings_);
+		}
+
+		if (serializer_->Deserialize(input)) {
+
+			serializer_->ApplyDataToCatalogue();                         
+			InitializeRouter();                                    
+			serializer_->SetRouter(transport_router_);         
+			serializer_->ApplyDataToRouter();                           
+
+			return true;
+		}
+
+		return false;
+
+	}
+	
 }
 

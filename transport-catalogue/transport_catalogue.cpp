@@ -31,7 +31,11 @@ namespace transport_catalogue {
 	void TransportCatalogue::AddStop(Stop&& stop)
 	{
 		if (!stopnames_to_stops_.count(stop.name_)) {
+
 			Stop& stop_ref = stops_data_.emplace_back(std::move(stop));
+
+			_all_stops_to_router.push_back(&stop_ref);
+
 			stopnames_to_stops_.insert({ std::string_view(stop_ref.name_), &stop_ref });
 		}
 	}
@@ -41,6 +45,9 @@ namespace transport_catalogue {
 		if (!routenames_to_routes_.count(bus.bus_name_)) {
 			//Заполненяем контейнеры маршрутами
 			Bus& bus_ref = routes_data_.emplace_back(std::move(bus));
+
+			_all_buses_to_router.push_back(&bus_ref);
+
 			routenames_to_routes_.insert({ std::string_view(bus_ref.bus_name_), &bus_ref });
 
 			//Находим уникальные остоновки
@@ -65,10 +72,37 @@ namespace transport_catalogue {
 
 	}
 
+	void TransportCatalogue::AddBusData(Bus&& bus)
+	{
+		if (routenames_to_routes_.count(bus.bus_name_) == 0) {
+			// заполнение основной базы
+			auto& ref = routes_data_.emplace_back(std::move(bus));
+			// заполнение базы для роутера
+			_all_buses_to_router.push_back(&ref);
+			// заполнение мапы для ускоренного поиска
+			routenames_to_routes_.insert({ std::string_view(ref.bus_name_), &ref });
+
+		}
+	}
+
 	void TransportCatalogue::AddStopsDistance(Stop* from_stop, Stop* to_stop, size_t dist)
 	{
 		if (from_stop != nullptr && to_stop != nullptr) {
 			stops_distances_.insert({ {from_stop, to_stop}, dist });
+		}
+	}
+
+	void TransportCatalogue::AddRouteFromSerializer(Bus&& bus) {
+		// добавляем если такого маршрута нет в базе
+		if (routenames_to_routes_.count(bus.bus_name_) == 0) {
+			// заполнение основной базы
+			auto& ref = routes_data_.emplace_back(std::move(bus));
+			// заполнение базы для роутера
+			_all_buses_to_router.push_back(&ref);
+			// заполнение мапы для ускоренного поиска
+			routenames_to_routes_.insert({ std::string_view(ref.bus_name_), &ref });
+
+			// в методе не выполняются математические расчёты расстояний и т.п, так как в базе всё уже есть
 		}
 	}
 
@@ -149,6 +183,21 @@ namespace transport_catalogue {
 		size_t result = GetDistanceBase(from_stop, to_stop);
 
 		return (result > 0 ? result : GetDistanceBase(to_stop, from_stop));
+	}
+
+	size_t TransportCatalogue::GetStopsCount() const
+	{
+		return stops_data_.size();
+	}
+
+	const std::deque<Stop*>& TransportCatalogue::GetAllStopsData() const
+	{
+		return _all_stops_to_router;
+	}
+
+	const std::deque<Bus*>& TransportCatalogue::GetAllBusesData() const
+	{
+		return _all_buses_to_router;
 	}
 
 }

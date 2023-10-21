@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package transport_catalogue_serialize;
+
+message RouterEdge {
+    string edge_type = 1;                                     
+    uint64 edge_from = 2;                                     
+    uint64 edge_to = 3;                                       
+    double edge_weight = 4;                                   
+    string edge_name = 5;                                     
+    int32 span_count = 6;                                    
+}

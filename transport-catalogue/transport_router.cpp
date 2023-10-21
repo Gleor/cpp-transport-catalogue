@@ -2,145 +2,163 @@
 
 namespace transport_catalogue {
 
-    namespace router {
+	namespace router {
 
-        bool operator<(const RouteWeight& left, const RouteWeight& right) {
-            return left.total_time < right.total_time;
-        }
+		RouterSettings::RouterSettings(size_t time, double velocity)
+			: _bus_wait_time(time), _bus_velocity(velocity) {
+		}
 
-        RouteWeight operator+(const RouteWeight& left, const RouteWeight& right) {
-            RouteWeight result;
-            result.total_time = left.total_time + right.total_time;
-            return result;
-        }
+		RouterSettings& RouterSettings::SetBusWaitTime(size_t time) {
+			_bus_wait_time = time;
+			return *this;
+		}
+		RouterSettings& RouterSettings::SetBusVelocity(double velocity) {
+			_bus_velocity = velocity;
+			return *this;
+		}
 
-        bool operator>(const RouteWeight& left, const RouteWeight& right) {
-            return left.total_time > right.total_time;
-        }
+		size_t RouterSettings::GetBusWaitTime() const {
+			return _bus_wait_time;
+		}
+		double RouterSettings::GetBusVelocity() const {
+			return _bus_velocity;
+		}
 
-        TransportRouter::TransportRouter(const transport_catalogue::TransportCatalogue& catalogue,
-            const RouterSettings& settings)
-            : catalogue_(catalogue), settings_(settings) {
-        }
+		TransportRouter::TransportRouter(transport_catalogue::TransportCatalogue& tc)
+			: transport_catalogue_(tc), graphs_(tc.GetStopsCount() * 2) {
+		}
 
-        void TransportRouter::InitializeRouter() {
+		TransportRouter::TransportRouter(transport_catalogue::TransportCatalogue& tc, const RouterSettings& settings)
+			: transport_catalogue_(tc), _settings(settings), graphs_(tc.GetStopsCount() * 2) {
+		}
 
-            if (!is_initialized_) {
-                graph::DirectedWeightedGraph<RouteWeight>graph(ProcessStops());
-                graph_ = std::move(graph);
+		TransportRouter::TransportRouter(transport_catalogue::TransportCatalogue& tc, RouterSettings&& settings)
+			: transport_catalogue_(tc), _settings(std::move(settings)), graphs_(tc.GetStopsCount() * 2) {
+		}
 
-                BuildRouterGraph();
+		TransportRouter& TransportRouter::SetRouterSettings(const RouterSettings& settings) {
+			_settings = settings;
+			return *this;
+		}
 
-                router_ = std::make_unique<graph::Router<RouteWeight>>(graph_);
-                is_initialized_ = true;
-            }
-        }
+		TransportRouter& TransportRouter::SetRouterSettings(RouterSettings&& settings) {
+			_settings = std::move(settings);
+			return *this;
+		}
 
-        void TransportRouter::SetInitialized() {
-            is_initialized_ = true;
-        }
+		TransportRouter& TransportRouter::SetRouterTransportCatalogue(transport_catalogue::TransportCatalogue& tc) {
+			transport_catalogue_ = tc;
+			return *this;
+		}
 
-        const TransportRouter::RouterSettings& TransportRouter::GetSettings() const {
-            return settings_;
-        }
+		TransportRouter& TransportRouter::SetRouterGraphs(graph::DirectedWeightedGraph<double>&& graphs) {
+			graphs_ = std::move(graphs);
+			return *this;
+		}
 
-        TransportRouter::RouterSettings& TransportRouter::GetSettings() {
-            return settings_;
-        }
+		TransportRouter& TransportRouter::SetRouterWaitPoints(std::unordered_map<std::string_view, size_t>&& wait_points) {
+			wait_points_ = std::move(wait_points);
+			return *this;
+		}
 
-        domain::RouteStat TransportRouter::FindRoute(const std::string_view from,
-            const std::string_view to) {
-            
-            InitializeRouter();
+		TransportRouter& TransportRouter::SetRouterMovePoints(std::unordered_map<std::string_view, size_t>&& move_points) {
+			move_points_ = std::move(move_points);
+			return *this;
+		}
 
-            domain::RouteStat result;
+		const graph::DirectedWeightedGraph<double>& TransportRouter::GetRouterGraphs() const {
+			return graphs_;
+		}
 
-            auto from_id = stop_name_to_id_.at(from);
-            auto to_id = stop_name_to_id_.at(to);
-            auto route = router_->BuildRoute(from_id, to_id);
-            if (!route) {
-                return result;
-            }
+		const std::unordered_map<std::string_view, size_t>& TransportRouter::GetRouterWaitPoints() const {
+			return wait_points_;
+		}
 
-            result.is_found_ = true;
-            result.wait_time_ = settings_.wait_time;
-            double total_time = 0;
+		const std::unordered_map<std::string_view, size_t>& TransportRouter::GetRouterMovePoints() const {
+			return move_points_;
+		}
 
-            for (auto edge_id : route->edges) {
-                const auto& edge = graph_.GetEdge(edge_id);
-                result.route_items_.push_back(transport_catalogue::RouteItem()
-                    .SetName(edge.weight.bus_name)
-                    .SetStopFrom(id_to_stop_.at(edge.from)->name_)
-                    .SetStopTo(id_to_stop_.at(edge.to)->name_)
-                    .SetTime(edge.weight.total_time - settings_.wait_time)
-                    .SetSpanCount(edge.weight.span_count)
-                );
-                total_time += edge.weight.total_time;
-            }
-            result.total_time_ = total_time;
-            return result;
-        }
+		transport_catalogue::RouteStat TransportRouter::MakeRoute(std::string_view from, std::string_view to) {
+			if (!_router) {
+				ImportRoutingDataFromCatalogue();
+			}
 
-        void TransportRouter::BuildRouterGraph() {
+			transport_catalogue::RouteStat result;
+			if (wait_points_.count(from) && move_points_.count(to))
+			{
+				auto data = _router.get()->BuildRoute(
+					wait_points_.at(from), move_points_.at(to));
 
-            for (const auto& [route_name, route] : catalogue_.GetBusesMap()) {
-                int stops_count = static_cast<int>(route->stops_.size());
+				if (data.has_value())    
+				{
+					result.is_found_ = true;
+					for (auto& item_id : data.value().edges) {
+						const auto& edge = graphs_.GetEdge(item_id);
+						result.route_items_.push_back(transport_catalogue::RouteItem()
+							.SetName(edge.GetEdgeName())
+							.SetEdgeType(edge.GetEdgeType())
+							.SetTime(edge.GetEdgeWeight())
+							.SetSpanCount(edge.GetEdgeSpanCount()));
 
-                for (int from_stop_id = 0; from_stop_id < stops_count - 1; ++from_stop_id) {
+						result.total_time_ += edge.weight;
+					}
+				}
+			}
+			return result;
+		}
 
-                    double route_time = settings_.wait_time;
-                    double route_time_reverse = settings_.wait_time;
-                    for (int to_stop_id = from_stop_id + 1; to_stop_id < stops_count; ++to_stop_id) {
-                        graph::Edge<RouteWeight> edge = BuildEdge(route, from_stop_id, to_stop_id);
-                        route_time += ComputeRouteTime(route, to_stop_id - 1, to_stop_id);
-                        edge.weight.total_time = route_time;
-                        graph_.AddEdge(edge);
+		TransportRouter& TransportRouter::ImportRoutingDataFromCatalogue() {
 
-                        if (!route->is_circular_) {
-                            int i_back = stops_count - 1 - from_stop_id;
-                            int j_back = stops_count - 1 - to_stop_id;
-                            graph::Edge<RouteWeight> edge = BuildEdge(route, i_back, j_back);
-                            route_time_reverse += ComputeRouteTime(route, j_back + 1, j_back);
-                            edge.weight.total_time = route_time_reverse;
-                            graph_.AddEdge(edge);
-                        }
-                    }
-                }
-            }
-        }
+			size_t points_counter = 0;
+			for (const auto& stop : transport_catalogue_.GetAllStopsData()) {
 
-        size_t TransportRouter::ProcessStops() {
+				wait_points_.insert({ stop->name_, points_counter });
+				move_points_.insert({ stop->name_, ++points_counter });
 
-            size_t counter = 0;
-            const auto& stops = catalogue_.GetStopsMap();
-            stop_name_to_id_.reserve(stops.size());
-            id_to_stop_.reserve(stops.size());
-            for (auto& stop : stops) {
-                stop_name_to_id_.insert({ stop.first, counter });
-                id_to_stop_.insert({ counter++, stop.second });
-            }
-            return counter;
-        }
+				graphs_.AddEdge(graph::Edge<double>()
+					.SetEdgeType(graph::EdgeType::wait)
+					.SetVertexFromId(wait_points_.at(stop->name_))
+					.SetVertexToId(move_points_.at(stop->name_))
+					.SetEdgeWeight(static_cast<double>(_settings.GetBusWaitTime()))
+					.SetEdgeName(stop->name_)
+					.SetEdgeSpanCount(0));
+				++points_counter;
+			}
 
-        graph::Edge<RouteWeight> TransportRouter::BuildEdge(const domain::Bus* route,
-            int from_stop_index, int to_stop_index) {
+			for (const auto& bus : transport_catalogue_.GetAllBusesData()) {
 
-            graph::Edge<RouteWeight> edge;
-            edge.from = stop_name_to_id_.at(route->stops_.at(static_cast<size_t>(from_stop_index))->name_);
-            edge.to = stop_name_to_id_.at(route->stops_.at(static_cast<size_t>(to_stop_index))->name_);
-            edge.weight.bus_name = route->bus_name_;
-            edge.weight.span_count = static_cast<int>(to_stop_index - from_stop_index);
-            return edge;
-        }
+				// движемся по маршруту от первой остановки
+				for (size_t from_stop_id = 0; from_stop_id != bus->stops_.size(); ++from_stop_id) {
 
-        double TransportRouter::ComputeRouteTime(const domain::Bus* route, int from_stop_index, int to_stop_index) {
-            auto distance =
-                catalogue_.GetDistance(route->stops_.at(static_cast<size_t>(from_stop_index)),
-                    route->stops_.at(static_cast<size_t>(to_stop_index)));
-            return distance / (settings_.velocity * VELOCITY_COEF);
-        }
+					int span_count = 0;
 
-    } // namespace router
+					// до каждой из последующих остановок
+					for (size_t to_stop_id = from_stop_id + 1; to_stop_id != bus->stops_.size(); ++to_stop_id) {
 
-} //namespace transport_catalogue
+						double route_distance = 0.0;
 
+						// считаем расстояния по тем же точкам
+						for (size_t current_point = from_stop_id + 1; current_point <= to_stop_id; ++current_point) {
+							route_distance += static_cast<double>(transport_catalogue_
+								.GetDistance(bus->stops_[current_point - 1], bus->stops_[current_point]));
+						}
+
+						graphs_.AddEdge(graph::Edge<double>()
+							.SetEdgeType(graph::EdgeType::move)
+							.SetVertexFromId(move_points_.at(bus->stops_[from_stop_id]->name_))
+							.SetVertexToId(wait_points_.at(bus->stops_[to_stop_id]->name_))
+							.SetEdgeWeight(route_distance / (_settings.GetBusVelocity() * VELOCITY_COEF))
+							.SetEdgeName(bus->bus_name_)
+							.SetEdgeSpanCount(++span_count));
+					}
+
+				}
+
+			}
+			_router = std::make_unique<graph::Router<double>>(graphs_);
+			return *this;
+		}
+
+	}   
+
+}   

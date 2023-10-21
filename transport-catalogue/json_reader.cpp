@@ -3,6 +3,22 @@
 #include "svg.h"
 
 namespace json_reader {
+    
+    JsonReader::JsonReader(std::istream& input, ProgramTask task)
+        : input_(json::Load(input))
+    {
+        switch (task)
+        {
+        case json_reader::make_base:
+            this->MakeBaseTask();
+            break;
+        case json_reader::process_requests:
+            this->ProcessRequestsTask();
+            break;
+        default:
+            break;
+        }
+    }
 
     void JsonReader::RouteParser(domain::Request* request, const json::Dict& node) {
         if (node.count("is_roundtrip") != 0) {
@@ -119,16 +135,16 @@ namespace json_reader {
         }
     }
 
-    void JsonReader::ParseRouteSettingsRequest(transport_catalogue::router::TransportRouter::RouterSettings& settings, const json::Dict& node)
+    void JsonReader::ParseRouteSettingsRequest(transport_catalogue::router::RouterSettings& settings, const json::Dict& node)
     {
         for (auto& item : node) {
             if (item.first == "bus_wait_time"s)
             {
-                settings.wait_time = static_cast<size_t>(item.second.AsInt());
+                settings._bus_wait_time = static_cast<size_t>(item.second.AsInt());
             }
             else if (item.first == "bus_velocity"s)
             {
-                settings.velocity = (item.second.AsDouble());
+                settings._bus_velocity = (item.second.AsDouble());
             }
             else
             {
@@ -185,24 +201,22 @@ namespace json_reader {
         ParseRenderRequest(settings, render_settings);
 
         request_handler_.SetMapRenderSettings(std::move(settings));
-        //request_handler_.RenderMap();
+
     }
 
     void JsonReader::ProcessRouteSettingsRequest(const json::Dict& route_settings)
     {
-        transport_catalogue::router::TransportRouter::RouterSettings settings;
+        transport_catalogue::router::RouterSettings settings;
 
         ParseRouteSettingsRequest(settings, route_settings);
 
-
         {
-            //LOG_DURATION("Router_set");
             request_handler_.SetRouterSettings(std::move(settings));
             request_handler_.InitializeTransportRouterGraph();
         }
     }
 
-    void JsonReader::ProcessRequests()
+    void JsonReader::MakeBaseTask()
     {
         const json::Dict& json_requests = input_.GetRoot().AsDict();
 
@@ -221,11 +235,29 @@ namespace json_reader {
             ProcessRouteSettingsRequest(json_requests.at("routing_settings").AsDict());
         }
 
+        if (json_requests.count("serialization_settings")) 
+        {
+            std::ofstream output(json_requests.at("serialization_settings").AsDict().at("file").AsString(), std::ios::binary);
+
+            assert(request_handler_.SerializeData(output));
+        }
+    }
+
+    void JsonReader::ProcessRequestsTask()
+    {
+        const json::Dict& json_requests = input_.GetRoot().AsDict();
+
+        if (json_requests.count("serialization_settings"))
+        {
+            std::ifstream input(json_requests.at("serialization_settings").AsDict().at("file").AsString(), std::ios::binary);
+
+            assert(request_handler_.DeserializeData(input));
+        }
+
         if (json_requests.count("stat_requests"))
         {
             ProcessStatRequests(json_requests.at("stat_requests").AsArray());
         }
-
     }
 
     const json::Document JsonReader::StopToNode(size_t id, domain::StopStat* stop_stat) const {
@@ -305,19 +337,30 @@ namespace json_reader {
             json::Array route_items;
             for (auto& item : route_stat.route_items_) {
 
-                json::Dict wait_item = json::Builder{}.StartDict().
-                    Key("type"s).Value("Wait"s).
-                    Key("stop_name"s).Value(std::string(item.from_stop)).
-                    Key("time"s).Value(route_stat.wait_time_).
-                    EndDict().Build().AsDict();
-                json::Dict bus_item = json::Builder{}.StartDict().
-                    Key("type"s).Value("Bus"s).
-                    Key("bus"s).Value(std::string(item.name_)).
-                    Key("span_count"s).Value(item.span_count_).
-                    Key("time"s).Value(item.time_).
-                    EndDict().Build().AsDict();
-                route_items.push_back(wait_item);
-                route_items.push_back(bus_item);
+                if (item.GetType() == graph::wait)
+                {
+                    route_items.push_back(
+                        json::Builder()
+                        .StartDict()
+                        .Key("type"s).Value(std::string("Wait"s))
+                        .Key("stop_name"s).Value(std::string(item.GetName()))
+                        .Key("time"s).Value(item.GetTime())
+                        .EndDict()
+                        .Build());
+                }
+                else
+                {
+                    route_items.push_back(
+                        json::Builder()
+                        .StartDict()
+                        .Key("type"s).Value(std::string("Bus"s))
+                        .Key("bus"s).Value(std::string(item.GetName()))
+                        .Key("span_count"s).Value(item.GetSpanCount())
+                        .Key("time"s).Value(item.GetTime())
+                        .EndDict()
+                        .Build());
+                }
+
             }
             return json::Document(
                 json::Builder()

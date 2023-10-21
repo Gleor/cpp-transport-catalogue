@@ -1,21 +1,26 @@
 #pragma once
 
-#include "json.h"
-#include "transport_catalogue.h"
 #include "request_handler.h"
-#include "map_renderer.h"
 #include "json_builder.h"
-#include "transport_router.h"
 
-#include <iostream>
+#include <sstream>
+#include <cassert>
+#include <optional>
+#include <fstream>
+
+using namespace std::literals;
 
 namespace json_reader {
 
+    enum ProgramTask {
+        make_base,
+        process_requests
+    };
+
     class JsonReader {
     public:
-        JsonReader(std::istream& input, request_handler::RequestHandler& request_handler)
-            : input_(json::Load(input)), request_handler_(request_handler)
-        {}
+        JsonReader(std::istream& input, json_reader::ProgramTask task);
+
         svg::Point ParsePoint(const json::Node& node) const;
         void RouteParser(domain::Request* request, const json::Dict& node);
         void StopParser(domain::Request* request, const json::Dict& node);
@@ -23,13 +28,15 @@ namespace json_reader {
         void ParseBaseRequest(domain::Request*, const json::Dict&);
         void ParseStatRequest(domain::Request*, const json::Dict&);
         void ParseRenderRequest(map_renderer::RendererSettings& settings, const json::Dict& node);
-        void ParseRouteSettingsRequest(transport_catalogue::router::TransportRouter::RouterSettings& settings, const json::Dict&);
+        void ParseRouteSettingsRequest(transport_catalogue::router::RouterSettings& settings, const json::Dict&);
 
         void ProcessBaseRequests(const json::Array& arr);
         void ProcessStatRequests(const json::Array& arr);
         void ProcessRenderRequest(const json::Dict& render_settings);
         void ProcessRouteSettingsRequest(const json::Dict& route_settings);
-        void ProcessRequests();
+
+        void MakeBaseTask();
+        void ProcessRequestsTask();
 
         const json::Document StopToNode(size_t id, domain::StopStat* stop_stat) const;
         const json::Document BusToNode(size_t id, domain::BusStat* bus_stat) const;
@@ -43,7 +50,7 @@ namespace json_reader {
     private:
         json::Document input_;
 
-        request_handler::RequestHandler& request_handler_;
+        request_handler::RequestHandler request_handler_;
         domain::RequestsMap json_requests_ = {};
         std::deque<domain::Request> base_requests_data_;
         std::deque<domain::Request> stat_requests_data_;

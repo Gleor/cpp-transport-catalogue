@@ -4,6 +4,7 @@
 #include "map_renderer.h"
 #include "transport_catalogue.h"
 #include "transport_router.h"
+#include "serialization.h"
 
 using namespace std::literals;
 
@@ -14,13 +15,16 @@ namespace request_handler {
 
         using MapDistanses = std::map<std::string, std::map<std::string, int64_t>>;
 
-        RequestHandler(transport_catalogue::TransportCatalogue& catalogue, map_renderer::MapRenderer& renderer);
+        RequestHandler() = default;
 
-        svg::Document RenderMap() const;
-        const std::string GetMap() const;
+        svg::Document RenderMap();
+        const std::string GetMap();
+
+        void InitializeMapRenderer();
+        void InitializeRouter();
 
         void SetMapRenderSettings(map_renderer::RendererSettings&& settings);
-        void SetRouterSettings(transport_catalogue::router::TransportRouter::RouterSettings&& settings);
+        void SetRouterSettings(transport_catalogue::router::RouterSettings&& settings);
 
         void InitializeTransportRouterGraph();
 
@@ -37,14 +41,21 @@ namespace request_handler {
         domain::RouteStat GetRoute(const std::string_view from, const std::string_view to);
 
         void HandleBaseRequests(domain::RequestsMap&& requests);
+        
+        bool SerializeData(std::ostream& output);
+        bool DeserializeData(std::istream& input);
 
     private:
-        // RequestHandler использует агрегацию объектов "Транспортный Справочник" и "Визуализатор Карты"
-        transport_catalogue::TransportCatalogue& transport_catalogue_;
-        map_renderer::MapRenderer& map_renderer_;
+
+        transport_catalogue::TransportCatalogue transport_catalogue_;
+        std::shared_ptr<map_renderer::MapRenderer> map_renderer_ = nullptr;
+        std::shared_ptr<transport_catalogue::serialize::Serializator> serializer_ = nullptr;
+        std::shared_ptr<transport_catalogue::router::TransportRouter> transport_router_ = nullptr;
+
+        transport_catalogue::router::RouterSettings router_settings_;
+        map_renderer::RendererSettings renderer_settings_;
         MapDistanses map_distances_ = {};
 
-        std::unique_ptr<transport_catalogue::router::TransportRouter> transport_router_ = nullptr;
     };
 }
  

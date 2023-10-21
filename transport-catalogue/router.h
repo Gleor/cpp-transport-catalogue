@@ -20,7 +20,7 @@ namespace graph {
         using Graph = DirectedWeightedGraph<Weight>;
 
     public:
-        explicit Router(const Graph& graph, bool initialize = true);
+        explicit Router(const Graph& graph);
 
         struct RouteInfo {
             Weight weight;
@@ -29,13 +29,12 @@ namespace graph {
 
         std::optional<RouteInfo> BuildRoute(VertexId from, VertexId to) const;
 
+    private:
         struct RouteInternalData {
             Weight weight;
             std::optional<EdgeId> prev_edge;
         };
         using RoutesInternalData = std::vector<std::vector<std::optional<RouteInternalData>>>;
-
-    private:
 
         void InitializeRoutesInternalData(const Graph& graph) {
             const size_t vertex_count = graph.GetVertexCount();
@@ -79,29 +78,19 @@ namespace graph {
         static constexpr Weight ZERO_WEIGHT{};
         const Graph& graph_;
         RoutesInternalData routes_internal_data_;
-    public:
-        // доступ к внутренним данным
-        RoutesInternalData& GetRoutesInternalData() {
-            return routes_internal_data_;
-        }
-        const RoutesInternalData& GetRoutesInternalData() const {
-            return routes_internal_data_;
-        }
     };
 
     template <typename Weight>
-    Router<Weight>::Router(const Graph& graph, bool initialize)
+    Router<Weight>::Router(const Graph& graph)
         : graph_(graph)
         , routes_internal_data_(graph.GetVertexCount(),
             std::vector<std::optional<RouteInternalData>>(graph.GetVertexCount()))
     {
-        if (initialize) {
-            InitializeRoutesInternalData(graph);
+        InitializeRoutesInternalData(graph);
 
-            const size_t vertex_count = graph.GetVertexCount();
-            for (VertexId vertex_through = 0; vertex_through < vertex_count; ++vertex_through) {
-                RelaxRoutesInternalDataThroughVertex(vertex_count, vertex_through);
-            }
+        const size_t vertex_count = graph.GetVertexCount();
+        for (VertexId vertex_through = 0; vertex_through < vertex_count; ++vertex_through) {
+            RelaxRoutesInternalDataThroughVertex(vertex_count, vertex_through);
         }
     }
 
@@ -122,6 +111,8 @@ namespace graph {
         }
         std::reverse(edges.begin(), edges.end());
 
+        // удаляем крайнюю остановку
+        edges.resize(edges.size() - 1);
         return RouteInfo{ weight, std::move(edges) };
     }
 

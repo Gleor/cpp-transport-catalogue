@@ -176,15 +176,9 @@ namespace domain {
 		return *this;
 	}
 
-	RouteItem& RouteItem::SetStopFrom(std::string_view from)
+	RouteItem& RouteItem::SetEdgeType(graph::EdgeType type)
 	{
-		from_stop = from;
-		return *this;
-	}
-
-	RouteItem& RouteItem::SetStopTo(std::string_view to)
-	{
-		to_stop = to;
+		type_ = type;
 		return *this;
 	}
 
@@ -198,6 +192,11 @@ namespace domain {
 
 	double RouteItem::GetTime() const {
 		return time_;
+	}
+
+	graph::EdgeType RouteItem::GetType() const
+	{
+		return type_;
 	}
 	
 }

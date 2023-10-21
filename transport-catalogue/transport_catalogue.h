@@ -26,7 +26,9 @@ namespace transport_catalogue {
 		void ComputeRouteLength(Bus& route);
 		void AddStop(Stop&& stop);
 		void AddBus(Bus&& route);
+		void AddBusData(Bus&& bus);
 		void AddStopsDistance(Stop* from_stop, Stop* to_stop, size_t dist);
+		void AddRouteFromSerializer(Bus&& bus);
 
 		Stop* FindStopByName(const std::string_view stop) const;
 		Bus* FindRouteByName(const std::string_view route) const;
@@ -37,13 +39,18 @@ namespace transport_catalogue {
 		const MapStopsDistances& GetStopDistancesRef() const;
 		size_t GetDistanceBase(Stop* from_stop, Stop* to_stop) const;
 		size_t GetDistance(Stop* from_stop, Stop* to_stop) const;
-
+		size_t GetStopsCount() const;
+		
+		const std::deque<Stop*>& GetAllStopsData() const;
+		const std::deque<Bus*>& GetAllBusesData() const;
 	private:
 
 		std::deque<Stop> stops_data_;
+		std::deque<Stop*> _all_stops_to_router;
 		StopsMap stopnames_to_stops_;
 
 		std::deque<Bus> routes_data_;
+		std::deque<Bus*> _all_buses_to_router;
 		BusesMap routenames_to_routes_;
 
 		MapStopsDistances stops_distances_;

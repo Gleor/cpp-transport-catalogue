@@ -13,7 +13,7 @@
 using namespace std::literals;
 
 namespace domain {
-
+	
 	struct Stop {
 		Stop() = default;
 		bool operator==(const Stop& other) const;
@@ -130,18 +130,17 @@ namespace domain {
 		RouteItem& SetName(std::string_view bus_name);
 		RouteItem& SetSpanCount(int count);
 		RouteItem& SetTime(double time);
-		RouteItem& SetStopFrom(std::string_view from_stop);
-		RouteItem& SetStopTo(std::string_view to_stop);
+		RouteItem& SetEdgeType(graph::EdgeType);
 
 		std::string_view GetName() const;
 		int GetSpanCount() const;
 		double GetTime() const;
+		graph::EdgeType GetType() const;
 
 		std::string name_ = {};
-		std::string from_stop = {};
-		std::string to_stop = {};
 		int span_count_ = 0;
 		double time_ = 0.0;
+		graph::EdgeType type_;
 	};
 
 	struct RouteStat
@@ -149,6 +148,5 @@ namespace domain {
 		double total_time_ = 0.0;
 		std::vector<RouteItem> route_items_;
 		bool is_found_ = false;
-		double wait_time_ = 0.0;
 	};
 }

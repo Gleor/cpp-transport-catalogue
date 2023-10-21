@@ -41,6 +41,44 @@ namespace map_renderer {
 
         RendererSettings() = default;
 
+        RendererSettings& SetWidth(double);
+        RendererSettings& SetHeight(double);
+        RendererSettings& SetPadding(double);
+
+        RendererSettings& SetLineWidth(double);
+        RendererSettings& SetStopRadius(double);
+
+        RendererSettings& SetBusLabelFont(size_t);
+        RendererSettings& SetBusLabelOffset(svg::Point);
+
+        RendererSettings& SetStopLabelFont(size_t);
+        RendererSettings& SetStopLabelOffset(svg::Point);
+
+        RendererSettings& SetUnderlayerColor(const svg::Color&);
+        RendererSettings& SetUnderlayerColor(svg::Color&&);
+        RendererSettings& SetUnderlayerWidth(double);
+        RendererSettings& AddColorInPalette(const svg::Color&);
+        RendererSettings& AddColorInPalette(svg::Color&&);
+
+        RendererSettings& ResetColorPalette();
+
+        double GetWight() const;
+        double GetHeight() const;
+
+        double GetPadding() const;
+        double GetLineWidth() const;
+        double GetStopRadius() const;
+
+        size_t GetBusLabelFontSize() const;
+        svg::Point GetBusLabelOffSet() const;
+
+        size_t GetStopLabelFontSize() const;
+        svg::Point GetStopLabelOffSet() const;
+
+        svg::Color GetUnderlaterColor() const;
+        double GetUnderlayerWidth() const;
+        const std::vector<svg::Color>& GetColorPalette() const;
+
         double width_ = 1200.0;
         double height_ = 1200.0;
 
@@ -65,10 +103,12 @@ namespace map_renderer {
     {
     public:
         explicit MapRenderer() = default;
+        MapRenderer(const RendererSettings& settings);
 
-        void SetSettings(RendererSettings&& settings);
+        void SetSettings(RendererSettings& settings);
 
         const RendererSettings& GetRenderSettings() const;
+        RendererSettings& GetRenderSettings();
 
         svg::Document RenderMap(const domain::BusesMap& routes);
         
@@ -83,7 +123,6 @@ namespace map_renderer {
     private:
 
         RendererSettings settings_;
-        
         void ProjectRoutePoints(const std::vector<domain::Bus*>& buses, RoutesPoints& projected_points, const SphereProjector& projector) const;
 
         void RenderRoutes(svg::Document& document, const RoutesPoints& projected_points, std::vector<svg::Color>& colors) const;

@@ -1,16 +1,32 @@
+#include <fstream>
+#include <iostream>
+#include <string_view>
 #include "json_reader.h"
-#include "request_handler.h"
-#include "transport_catalogue.h"
-#include "map_renderer.h"
 
-using namespace transport_catalogue;
+using namespace std::literals;
 
-int main() {
+void PrintUsage(std::ostream& stream = std::cerr) {
+    stream << "Usage: transport_catalogue [make_base|process_requests]\n"sv;
+}
 
-    TransportCatalogue catalogue;
-    map_renderer::MapRenderer map_renderer;
-    request_handler::RequestHandler rh(catalogue, map_renderer);
-    json_reader::JsonReader json_doc(std::cin, rh);
-    json_doc.ProcessRequests();
-    //rh.RenderMap().Render(std::cout);
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        PrintUsage();
+        return 1;
+    }
+
+    const std::string_view mode(argv[1]);
+
+    if (mode == "make_base"sv) {
+
+        json_reader::JsonReader j_reader(std::cin, json_reader::make_base);
+
+    } else if (mode == "process_requests"sv) {
+
+        json_reader::JsonReader j_reader(std::cin, json_reader::process_requests);
+
+    } else {
+        PrintUsage();
+        return 1;
+    }
 }

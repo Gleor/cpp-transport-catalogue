@@ -20,12 +20,177 @@ namespace map_renderer {
 			(max_lat_ - coords.lat) * zoom_coeff_ + padding_
 		};
 	}
+	RendererSettings& RendererSettings::SetWidth(double width) {
+		width_ = std::move(width);
+		
+		return *this;
+	}
 
-	void MapRenderer::SetSettings(RendererSettings&& settings) {
-		settings_ = std::move(settings);
+	// задать высоту отображаемого изображения
+	RendererSettings& RendererSettings::SetHeight(double height) {
+		height_ = std::move(height);
+		
+		return *this;
+	}
+
+	// задать отступ краёв карты от границ SVG-документа
+	RendererSettings& RendererSettings::SetPadding(double padding) {
+		padding_ = std::move(padding);
+		
+		return *this;
+	}
+
+	// задать толщину линий, которыми рисуются автобусные маршруты
+	RendererSettings& RendererSettings::SetLineWidth(double l_width) {
+		line_width_ = std::move(l_width);
+		
+		return *this;
+	}
+
+	// задать радиус окружностей, которыми обозначаются остановки
+	RendererSettings& RendererSettings::SetStopRadius(double radius) {
+		stop_radius_ = std::move(radius);
+		
+		return *this;
+	}
+
+	// задать размер текста написания автобусных остановок
+	RendererSettings& RendererSettings::SetBusLabelFont(size_t size) {
+		bus_label_font_size_ = std::move(size);
+		
+		return *this;
+	}
+
+	// задать смещение надписи с названием маршрута
+	RendererSettings& RendererSettings::SetBusLabelOffset(svg::Point offset) {
+		bus_label_offset_ = std::move(offset);
+		
+		return *this;
+	}
+
+	// задать размер текста написания автобусных остановок
+	RendererSettings& RendererSettings::SetStopLabelFont(size_t size) {
+		stop_label_font_size_ = std::move(size);
+		
+		return *this;
+	}
+
+	// задать смещение надписи названия остановки
+	RendererSettings& RendererSettings::SetStopLabelOffset(svg::Point offset) {
+		stop_label_offset_ = std::move(offset);
+		
+		return *this;
+	}
+
+	// задать цвет подложки под названиями
+	RendererSettings& RendererSettings::SetUnderlayerColor(const svg::Color& color) {
+		underlayer_color_ = color;
+		
+		return *this;
+	}
+
+	// задать цвет подложки под названиями
+	RendererSettings& RendererSettings::SetUnderlayerColor(svg::Color&& color) {
+		underlayer_color_ = std::move(color);
+		
+		return *this;
+	}
+
+	// задать толщину подложки под названиями
+	RendererSettings& RendererSettings::SetUnderlayerWidth(double width) {
+		underlayer_width_ = std::move(width);
+		
+		return *this;
+	}
+
+	// добавить цвет в палитру
+	RendererSettings& RendererSettings::AddColorInPalette(const svg::Color& color) {
+		color_palette_.push_back(color);
+		
+		return *this;
+	}
+
+	// добавить цвет в палитру
+	RendererSettings& RendererSettings::AddColorInPalette(svg::Color&& color) {
+		color_palette_.push_back(std::move(color));
+		
+		return *this;
+	}
+
+	// обнулить палетту цветов
+	RendererSettings& RendererSettings::ResetColorPalette() {
+		color_palette_.clear();
+		
+		return *this;
+	}
+	double RendererSettings::GetWight() const {
+		return width_;
+	}
+
+	// получить высоту отображаемого изображения
+	double RendererSettings::GetHeight() const {
+		return height_;
+	}
+
+	// получить отступ краёв карты от границ SVG-документа
+	double RendererSettings::GetPadding() const {
+		return padding_;
+	}
+
+	// получить толщину линий отрисовки маршрутов
+	double RendererSettings::GetLineWidth() const {
+		return line_width_;
+	}
+
+	// получить радиус окружностей отрисовки остановок
+	double RendererSettings::GetStopRadius() const {
+		return stop_radius_;
+	}
+
+	// получить размер текста названий маршрутов
+	size_t RendererSettings::GetBusLabelFontSize() const {
+		return bus_label_font_size_;
+	}
+	// получить смещение надписей названий маршрутов
+	svg::Point RendererSettings::GetBusLabelOffSet() const {
+		return bus_label_offset_;
+	}
+
+	// получить размер текста названий остановок
+	size_t RendererSettings::GetStopLabelFontSize() const {
+		return stop_label_font_size_;
+	}
+	// получить смещение надписей названий остановок
+	svg::Point RendererSettings::GetStopLabelOffSet() const {
+		return stop_label_offset_;
+	}
+
+	// получить цвет подложки под названиями остановок и маршрутов
+	svg::Color RendererSettings::GetUnderlaterColor() const {
+		return underlayer_color_;
+	}
+	// получить толщину подложки под названиями остановок и маршрутов
+	double RendererSettings::GetUnderlayerWidth() const {
+		return underlayer_width_;
+	}
+	// получить ссылку на палитру цветов рендера
+	const std::vector<svg::Color>& RendererSettings::GetColorPalette() const {
+		return color_palette_;
+	}
+	MapRenderer::MapRenderer(const RendererSettings& settings)
+		: settings_(settings)
+	{
+	}
+	void MapRenderer::SetSettings(RendererSettings& settings) {
+		settings_ = settings;
 	}
 
 	const RendererSettings& MapRenderer::GetRenderSettings() const {
+		return settings_;
+	}
+
+	RendererSettings& MapRenderer::GetRenderSettings()
+	{
 		return settings_;
 	}
 	
