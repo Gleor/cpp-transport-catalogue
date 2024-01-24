@@ -19,7 +19,7 @@ namespace json_reader {
 
     class JsonReader {
     public:
-        JsonReader(std::istream& input, json_reader::ProgramTask task);
+        JsonReader(std::istream& input, std::ostream& out, json_reader::ProgramTask task);
 
         svg::Point ParsePoint(const json::Node& node) const;
         void RouteParser(domain::Request* request, const json::Dict& node);
@@ -49,6 +49,7 @@ namespace json_reader {
 
     private:
         json::Document input_;
+        std::ostream& out_;
 
         request_handler::RequestHandler request_handler_;
         domain::RequestsMap json_requests_ = {};

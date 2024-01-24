@@ -19,13 +19,19 @@ int main(int argc, char* argv[]) {
 
     if (mode == "make_base"sv) {
 
-        json_reader::JsonReader j_reader(std::cin, json_reader::make_base);
+        std::ifstream in("make_base.json"s);
+        json_reader::JsonReader json_reader(in, std::cout, json_reader::make_base);
 
-    } else if (mode == "process_requests"sv) {
+    }
+    else if (mode == "process_requests"sv) {
 
-        json_reader::JsonReader j_reader(std::cin, json_reader::process_requests);
+        std::ifstream in("process_requests.json"s);
+        std::ofstream out("result.json"s);
 
-    } else {
+        json_reader::JsonReader json_reader(in, out, json_reader::process_requests);
+
+    }
+    else {
         PrintUsage();
         return 1;
     }

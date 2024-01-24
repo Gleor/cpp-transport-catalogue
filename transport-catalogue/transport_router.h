@@ -18,16 +18,16 @@ namespace transport_catalogue {
 		struct RouterSettings {
 
 			RouterSettings() = default;
-			RouterSettings(size_t, double);                                        
+			RouterSettings(size_t, double);
 
-			RouterSettings& SetBusWaitTime(size_t);                           
-			RouterSettings& SetBusVelocity(double);                           
+			RouterSettings& SetBusWaitTime(size_t);
+			RouterSettings& SetBusVelocity(double);
 
-			size_t GetBusWaitTime() const;                                    
-			double GetBusVelocity() const;                                    
+			size_t GetBusWaitTime() const;
+			double GetBusVelocity() const;
 
-			size_t _bus_wait_time = {};                                       
-			double _bus_velocity = {};               
+			size_t _bus_wait_time = {};
+			double _bus_velocity = {};
 		};
 
 		class TransportRouter {
@@ -35,43 +35,43 @@ namespace transport_catalogue {
 			transport_catalogue::TransportCatalogue& transport_catalogue_;
 		public:
 			TransportRouter() = default;
-			TransportRouter(transport_catalogue::TransportCatalogue&);                                        
-			TransportRouter(transport_catalogue::TransportCatalogue&, const RouterSettings&);                 
-			TransportRouter(transport_catalogue::TransportCatalogue&, RouterSettings&&);                      
+			TransportRouter(transport_catalogue::TransportCatalogue&);
+			TransportRouter(transport_catalogue::TransportCatalogue&, const RouterSettings&);
+			TransportRouter(transport_catalogue::TransportCatalogue&, RouterSettings&&);
 
-			TransportRouter& SetRouterSettings(const RouterSettings&);                                     
-			TransportRouter& SetRouterSettings(RouterSettings&&);                                          
-			TransportRouter& SetRouterTransportCatalogue(transport_catalogue::TransportCatalogue&);        
+			TransportRouter& SetRouterSettings(const RouterSettings&);
+			TransportRouter& SetRouterSettings(RouterSettings&&);
+			TransportRouter& SetRouterTransportCatalogue(transport_catalogue::TransportCatalogue&);
 
-			TransportRouter& SetRouterGraphs(graph::DirectedWeightedGraph<double>&&);                       
-			TransportRouter& SetRouterWaitPoints(std::unordered_map<std::string_view, size_t>&&);            
-			TransportRouter& SetRouterMovePoints(std::unordered_map<std::string_view, size_t>&&);                                                  
+			TransportRouter& SetRouterGraphs(graph::DirectedWeightedGraph<double>&&);
+			TransportRouter& SetRouterWaitPoints(std::unordered_map<std::string_view, size_t>&&);
+			TransportRouter& SetRouterMovePoints(std::unordered_map<std::string_view, size_t>&&);
 
-			const graph::DirectedWeightedGraph<double>& GetRouterGraphs() const;                            
-			const std::unordered_map<std::string_view, size_t>& GetRouterWaitPoints() const;                 
-			const std::unordered_map<std::string_view, size_t>& GetRouterMovePoints() const;                 
+			const graph::DirectedWeightedGraph<double>& GetRouterGraphs() const;
+			const std::unordered_map<std::string_view, size_t>& GetRouterWaitPoints() const;
+			const std::unordered_map<std::string_view, size_t>& GetRouterMovePoints() const;
 
 			TransportRouter& ImportRoutingDataFromCatalogue();
 
 			template <typename Iterator>
 			void BuidEdgeTask(Iterator first, Iterator last);
 
-			transport_catalogue::RouteStat MakeRoute(std::string_view, std::string_view);                      
+			transport_catalogue::RouteStat MakeRoute(std::string_view, std::string_view);
 
 		private:
 			RouterSettings _settings;
 
-			graph::DirectedWeightedGraph<double> graphs_;                                                     
-			std::unique_ptr<graph::Router<double>> _router = nullptr;                                         
-			std::unordered_map<std::string_view, size_t> wait_points_;                                         
-			std::unordered_map<std::string_view, size_t> move_points_;                                         
-                                                       
+			graph::DirectedWeightedGraph<double> graphs_;
+			std::unique_ptr<graph::Router<double>> _router = nullptr;
+			std::unordered_map<std::string_view, size_t> wait_points_;
+			std::unordered_map<std::string_view, size_t> move_points_;
+
 		};
 
 		template<typename Iterator>
 		inline void TransportRouter::BuidEdgeTask(Iterator first, Iterator last)
 		{
-			for (; first != last, ++first) {
+			for (; first != last; ++first) {
 
 				for (size_t from_stop_id = 0; from_stop_id != first->stops_.size(); ++from_stop_id) {
 
@@ -102,4 +102,4 @@ namespace transport_catalogue {
 
 	}
 
-}   
+}

@@ -3,9 +3,10 @@
 #include "svg.h"
 
 namespace json_reader {
-    
-    JsonReader::JsonReader(std::istream& input, ProgramTask task)
+
+    JsonReader::JsonReader(std::istream& input, std::ostream& out, ProgramTask task)
         : input_(json::Load(input))
+        , out_(out)
     {
         switch (task)
         {
@@ -235,7 +236,7 @@ namespace json_reader {
             ProcessRouteSettingsRequest(json_requests.at("routing_settings").AsDict());
         }
 
-        if (json_requests.count("serialization_settings")) 
+        if (json_requests.count("serialization_settings"))
         {
             std::ofstream output(json_requests.at("serialization_settings").AsDict().at("file").AsString(), std::ios::binary);
 
@@ -412,7 +413,7 @@ namespace json_reader {
 
     void JsonReader::Printer(json::Array&& result)
     {
-        json::Print(json::Document{ result }, std::cout);
+        json::Print(json::Document{ result }, out_);
     }
 
 }
