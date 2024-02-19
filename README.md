@@ -573,5 +573,11 @@ transport_catalogue.exe process_requests
   "request_id": 1359372752
 }]
 ```
+</details>
+
+## **Системные требования**
+C++17 и выше
+
+Protobuf 3
 
 </details>
